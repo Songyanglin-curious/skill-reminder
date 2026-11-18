@@ -1,31 +1,43 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, rmdirSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { test } from 'node:test';
-import { apply, Config } from '../src/index.mjs';
+import { apply } from '../src/index.mjs';
+import { configFilename } from '../src/workspace-config.mjs';
 
-const example = JSON.parse(readFileSync(new URL('../config.example.json', import.meta.url), 'utf8'));
+const all = { skills: { 'agent-learn': true, 'agent-docs': true } };
 
-function fixture(config = {}) {
+function fixture(t, config = all) {
+  const cwd = mkdtempSync(join(tmpdir(), 'skill-reminder-dsh-'));
+  const path = join(cwd, configFilename);
+  t.after(() => {
+    rmSync(path, { force: true });
+    rmdirSync(cwd);
+  });
+  const write = data => writeFileSync(path, JSON.stringify(data));
+  if (config !== null) write(config);
   const handlers = new Map();
   const warnings = [];
+  let tool;
   apply({
     on: (event, listener) => handlers.set(event, listener),
     logger: { warn: message => warnings.push(message) },
-  }, Config(config));
+    tools: { register: definition => { tool = definition; } },
+  });
 
   const messages = [];
-  const agent = { session: { header: {} }, steer: message => messages.push(message) };
+  const agent = { session: { header: { cwd } }, steer: message => messages.push(message) };
   const stop = (turn, subject = agent, signal = new AbortController().signal) =>
     handlers.get('agent/turn-stopping')?.({ agent: subject, turn, signal });
-  return { agent, messages, stop, warnings };
+  return { agent, messages, stop, warnings, path, write, configure: args => tool.execute(args, { agent }) };
 }
 
-test('JSON 示例、全局开关和两项 Skill 的全部开关组合', () => {
-  assert.deepEqual(Config({}), example);
+test('工作区总开关和两项 Skill 的全部开关组合', t => {
   for (const enabled of [true, false]) {
     for (const learn of [true, false]) {
       for (const docs of [true, false]) {
-        const { messages, stop } = fixture({
+        const { messages, stop } = fixture(t, {
           enabled,
           skills: { 'agent-learn': learn, 'agent-docs': docs },
         });
@@ -47,17 +59,23 @@ test('JSON 示例、全局开关和两项 Skill 的全部开关组合', () => {
   }
 });
 
-test('部分配置保留另一个 Skill 的默认值并拒绝非布尔 JSON 配置', () => {
-  const { messages, stop } = fixture({ skills: { 'agent-docs': false } });
+test('只查询与轮末检查均不建文件，显式配置支持增量修改', async t => {
+  const { messages, stop, path, configure } = fixture(t, null);
   stop(1);
-  assert.match(messages[0].content[0].text, /agent-learn/);
+  assert.deepEqual(await configure({}), { path, config: null });
+  assert.equal(existsSync(path), false);
+  assert.equal(messages.length, 0);
+  const result = await configure({ learn: true });
+  assert.deepEqual(result.config.skills, { 'agent-learn': true, 'agent-docs': false });
+  stop(2);
   assert.doesNotMatch(messages[0].content[0].text, /agent-docs/);
-  assert.throws(() => Config({ enabled: 'false' }));
-  assert.throws(() => Config({ skills: { 'agent-learn': 0 } }));
+  assert.equal((await configure({ learn: true })).changed, false);
+  assert.deepEqual((await configure({ docs: true })).config.skills, all.skills);
+  await assert.rejects(async () => configure({ enabled: 'false' }), /布尔值/);
 });
 
-test('过滤取消和子 Agent，同轮去重，下一轮与独立会话正常提醒', () => {
-  const { agent, messages, stop } = fixture();
+test('过滤取消和子 Agent，同轮去重，下一轮与独立会话正常提醒', t => {
+  const { agent, messages, stop } = fixture(t);
   stop(1, agent, AbortSignal.abort());
   for (const header of [{ origin: 'subagent' }, { delegationDepth: 1 }]) {
     stop(1, { ...agent, session: { header } });
@@ -72,12 +90,12 @@ test('过滤取消和子 Agent，同轮去重，下一轮与独立会话正常�
   stop(1);
   assert.equal(messages.length, 2);
 
-  stop(1, { ...agent, session: { header: { parentSessionId: 'fork-source' } } });
+  stop(1, { ...agent, session: { header: { ...agent.session.header, parentSessionId: 'fork-source' } } });
   assert.equal(messages.length, 3);
 });
 
-test('投递失败只告警一次，后续轮次继续正常工作', () => {
-  const { agent, messages, stop, warnings } = fixture();
+test('投递失败只告警一次，后续轮次继续正常工作', t => {
+  const { agent, messages, stop, warnings } = fixture(t);
   stop(1, { ...agent, steer: () => { throw new Error('投递不可用'); } });
   stop(1);
   assert.equal(warnings.length, 1);
@@ -87,13 +105,13 @@ test('投递失败只告警一次，后续轮次继续正常工作', () => {
   assert.equal(messages.length, 1);
 });
 
-test('配置重新加载时，同一会话的当前轮次仍只收到一条提醒', () => {
-  const first = fixture();
+test('下一轮直接读取工作区修改，同一轮仍只收到一条提醒', t => {
+  const first = fixture(t);
   first.stop(1);
-  const updated = fixture({ skills: { 'agent-learn': false } });
-  updated.stop(1, first.agent);
+  first.write({ skills: { 'agent-docs': true } });
+  first.stop(1);
   assert.equal(first.messages.length, 1);
-  updated.stop(2, first.agent);
+  first.stop(2);
   assert.equal(first.messages.length, 2);
   assert.doesNotMatch(first.messages[1].content[0].text, /agent-learn/);
 });

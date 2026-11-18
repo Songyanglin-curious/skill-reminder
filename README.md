@@ -9,55 +9,35 @@
 
 DSH 和 Codex 加载相同的 Skill 目录。每个目录的 `SKILL.md` 使用 YAML frontmatter 声明 `name` 与 `description`，目录名与 `name` 保持一致。执行细节按需从 `references/` 读取。每份 `DESIGN.md` 供维护者查阅设计决策。
 
-## DSH 安装提醒插件
+## 工作区配置
 
-使用 Node.js 22+。DSH Profile 和事件接口已用 `0.2.2-rc.1` 验证。以下命令从 GitHub Release 安装固定版本，`web` 可替换为目标 Profile。
+在工作区根目录使用 `.skill-reminder.json`。每次收到轮末事件，Hook 将会话工作目录交给插件。插件定位最近的 Git 仓库根目录，没有 Git 仓库时使用会话工作目录。插件读取和校验配置，再决定是否生成提醒。缺少配置时直接结束。只有设为 `true` 的 Skill 才发送提醒，`enabled: false` 暂停这个工作区的全部提醒。
 
-```powershell
-dsh plugin --profile web add 'https://github.com/Songyanglin-curious/skill-reminder/releases/download/v0.1.0/skill-reminder-0.1.0.tgz'
-dsh --profile web --dump-config | Select-String -Pattern '^\s*- id: skill-reminder$' -Context 0,4
+例如，只开启学习提醒。
+
+```json
+{
+  "enabled": true,
+  "skills": {
+    "agent-learn": true,
+    "agent-docs": false
+  }
+}
 ```
 
-安装包和 `SHA256SUMS.txt` 位于 [v0.1.0 Release](https://github.com/Songyanglin-curious/skill-reminder/releases/tag/v0.1.0)。下载到本地时可用 `Get-FileHash -Algorithm SHA256` 核对。
+也可以直接对 Agent 说「在当前工作区只开启学习提醒」「关闭这个项目的 Docs 提醒」或「查看此工作区的提醒配置」。DSH 使用 `skill_reminder_config` 工具，Codex 使用插件自带的 `skill-reminder-config` Skill。明确要求修改时才创建或更新配置，修改会保留未指定的设置。旧版的宿主级开关和学习工作区标记无需迁移，按需求在各工作区开启提醒。
 
-安装包内含插件和 Skill 源文件。Skill 的发现位置由用户按下节配置。重启目标 Profile 后，插件默认开启两项提醒。DSH 每次投递最多增加一次回合内的模型续接；可在任意环境关闭不需要的提醒。
+## DSH 安装提醒插件
 
-如需从源码安装，在仓库根目录执行：
+使用 Node.js 22+，宿主接口已用 DSH `0.2.2-rc.1` 验证。从仓库根目录打包并安装，可将 `web` 替换为目标 Profile。
 
 ```powershell
 npm run pack
-dsh plugin --profile web add (Join-Path $PWD 'dist/skill-reminder-0.1.0.tgz')
+dsh plugin --profile web add (Join-Path $PWD 'dist/skill-reminder-0.2.2.tgz')
+dsh --profile web --dump-config | Select-String -Pattern '^\s*- id: skill-reminder$' -Context 0,4
 ```
 
-打包会生成 `dist/skill-reminder-0.1.0.tgz` 和 `dist/SHA256SUMS.txt`。卸载使用 `dsh plugin --profile web remove skill-reminder`。
-
-### JSON 配置
-
-[config.example.json](config.example.json) 给出插件的 `config` 对象。全局 `enabled` 为 `false` 时跳过提醒；`skills` 下的两项可以独立关闭。省略的开关默认开启。两个 Skill 都关闭时不发消息。配置值使用 JSON 布尔值。
-
-DSH 的 `--patch` 接收补丁条目数组。将配置对象放在 `id` 为 `skill-reminder` 的条目的 `config` 下，保存成 `reminder.json`，例如只启用 Docs 提醒。
-
-```json
-[
-  {
-    "id": "skill-reminder",
-    "config": {
-      "enabled": true,
-      "skills": {
-        "agent-learn": false,
-        "agent-docs": true
-      }
-    }
-  }
-]
-```
-
-```powershell
-dsh --profile web --patch ./reminder.json --dump-config
-dsh --profile web --patch ./reminder.json
-```
-
-在有效配置中核对 `id: skill-reminder` 及相应开关。需要持久保存 Profile 配置时，可在 `$DSH_HOME/profiles/web/cordis.patch.yml` 的现有补丁列表增补同一条目的 YAML 等价形式。DSH Home 默认为 `~/.dsh`。插件直接使用 DSH 传入的配置，`config.example.json` 是示例。
+打包同时生成 `dist/SHA256SUMS.txt`。安装包内含插件和两个业务 Skill，后者的发现位置按下节配置。卸载使用 `dsh plugin --profile web remove skill-reminder`。
 
 ## Codex 安装提醒插件
 
@@ -79,7 +59,7 @@ codex plugin list --marketplace personal-local --json
 
 以上命令使用名为 `personal-local` 的市场。安装后新建聊天，到桌面端 **设置 → Hooks** 或 CLI 的 `/hooks` 审阅并信任该插件的 `Stop` Hook，轮末续接随后生效。[Codex Hook 文档](https://learn.chatgpt.com/docs/hooks#review-and-trust-hooks)
 
-Codex 版使用 Node.js 22+。默认开启两项提醒，可将 [config.example.json](config.example.json) 复制为 `~/.codex/skill-reminder.json` 并修改其中的开关。若设置了 `CODEX_HOME`，配置文件放在对应目录。Skill 仍通过下方所述的共享目录发现。
+Codex 版使用 Node.js 22+。插件内置配置 Skill；`agent-learn` 与 `agent-docs` 仍通过下方所述的共享目录发现。
 
 ## 手动安装或链接 Skill
 
@@ -107,7 +87,7 @@ foreach ($name in 'agent-learn', 'agent-docs') {
 
 - 在相同项目目录新建 DSH 会话，从 Skill 菜单选择，或分别调用 `/agent-learn` 和 `/agent-docs`。Codex 桌面端可在侧边栏 Skills 查看，CLI 可从 `/skills` 或 `$` 选择两项。核对加载的入口属于本项目的两份 Skill。同名旧 Skill 同时出现时，先选定正确路径再测试。
 - 用隔离的学习工作区测试建立独立专题计划、接续、递归补缺和综合。对已有 Docs 的临时项目，测试只确认联调事实时能否更新 Project；文档已准确时应无写入。
-- 在启用两项的 DSH Profile 完成一个主 Agent 回合，查看会话事件或模型输入，确认只有一条来源为 `skill-reminder` 的合并提醒。检查已在上下文中的规则是否被复用。关闭全部提醒后重复一次，应无该来源的消息。
+- 在启用两项提醒的工作区 完成一个主 Agent 回合，查看会话事件或模型输入，确认只有一条来源为 `skill-reminder` 的合并提醒。检查已在上下文中的规则是否被复用。关闭全部提醒后重复一次，应无该来源的消息。
 - `npm ci` 后运行 `npm test`，覆盖开关组合、取消、子 Agent、去重及真实 DSH AgentLoop 的离线续接和卸载。真实学习与 Docs 维护效果通过宿主任务观察。
 
-迁移验证通过后，由用户停用旧插件的提醒 Hook，避免旧插件与新插件在同一环境重复提醒。原学习工作区的 `.agent-learn.json` 继续供 Skill 判断轮末资料维护是否启用。
+迁移验证通过后，由用户停用旧插件的提醒 Hook，避免旧插件与新插件在同一环境重复提醒。

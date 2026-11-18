@@ -9,6 +9,9 @@ const files = [
   ['codex-plugin/hooks/hooks.json', 'hooks/hooks.json'],
   ['src/codex-stop.mjs', 'src/codex-stop.mjs'],
   ['src/reminders.mjs', 'src/reminders.mjs'],
+  ['src/workspace-config.mjs', 'src/workspace-config.mjs'],
+  ['src/config-cli.mjs', 'src/config-cli.mjs'],
+  ['codex-plugin/skills/skill-reminder-config/SKILL.md', 'skills/skill-reminder-config/SKILL.md'],
   ['config.example.json', 'config.example.json'],
 ];
 

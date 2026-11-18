@@ -1,6 +1,6 @@
 {
   "name": "skill-reminder",
-  "version": "0.1.0",
+  "version": "0.2.2",
   "description": "在 DSH 主 Agent 回合结束时提醒按需使用学习和 Docs Skill",
   "type": "module",
   "main": "./src/index.mjs",
@@ -8,7 +8,7 @@
     ".": "./src/index.mjs",
     "./package.json": "./package.json"
   },
-  "files": ["src/index.mjs", "src/reminders.mjs", "skills", "cordis.patch.yml", "config.example.json"],
+  "files": ["src/index.mjs", "src/reminders.mjs", "src/workspace-config.mjs", "skills", "cordis.patch.yml", "config.example.json"],
   "dsh": { "bundle": { "patch": "./cordis.patch.yml" } },
   "scripts": {
     "pack": "node scripts/pack.mjs",
@@ -18,8 +18,7 @@
   "engines": { "node": ">=22" },
   "dependencies": {
     "@deepseek-ai/cordis": "~4.1.0",
-    "@deepseek-ai/dsh-llm": "0.2.2-rc.1",
-    "@deepseek-ai/schemastery": "~3.19.0"
+    "@deepseek-ai/dsh-llm": "0.2.2-rc.1"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-agent": "0.2.2-rc.1",
