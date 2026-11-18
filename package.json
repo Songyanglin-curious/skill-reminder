@@ -8,10 +8,11 @@
     ".": "./src/index.mjs",
     "./package.json": "./package.json"
   },
-  "files": ["src", "skills", "cordis.patch.yml", "config.example.json"],
+  "files": ["src/index.mjs", "src/reminders.mjs", "skills", "cordis.patch.yml", "config.example.json"],
   "dsh": { "bundle": { "patch": "./cordis.patch.yml" } },
   "scripts": {
     "pack": "node scripts/pack.mjs",
+    "pack:codex": "node scripts/pack-codex.mjs",
     "test": "node --test"
   },
   "engines": { "node": ">=22" },

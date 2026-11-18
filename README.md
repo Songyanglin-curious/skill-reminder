@@ -1,6 +1,6 @@
 # skill-reminder
 
-`skill-reminder` 在 DSH 主 Agent 回合结束时，根据配置合并发送一次短提醒。当前 Agent 判断是否有值得保存且尚未记录的变化，并按需使用已有的 Skill 规则。取消、委派给子 Agent 的回合及本轮后续的停止事件会跳过提醒。
+`skill-reminder` 在 DSH 和 Codex 的主 Agent 回合结束时，根据配置合并发送一次短提醒。当前 Agent 判断是否有值得保存且尚未记录的变化，并按需使用已有的 Skill 规则。取消、委派给子 Agent 的回合及本轮后续的停止事件会跳过提醒。
 
 | Skill | 入口 | 设计文档 |
 | --- | --- | --- |
@@ -58,6 +58,28 @@ dsh --profile web --patch ./reminder.json
 ```
 
 在有效配置中核对 `id: skill-reminder` 及相应开关。需要持久保存 Profile 配置时，可在 `$DSH_HOME/profiles/web/cordis.patch.yml` 的现有补丁列表增补同一条目的 YAML 等价形式。DSH Home 默认为 `~/.dsh`。插件直接使用 DSH 传入的配置，`config.example.json` 是示例。
+
+## Codex 安装提醒插件
+
+运行 `npm run pack:codex` 生成 `dist/codex/skill-reminder/`。将该目录完整复制到个人插件源，例如 `~/.codex/plugins/local/skill-reminder/`。在现有 `~/.agents/plugins/marketplace.json` 的 `plugins` 数组追加以下条目。
+
+```json
+{
+  "name": "skill-reminder",
+  "source": { "source": "local", "path": "./.codex/plugins/local/skill-reminder" },
+  "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+  "category": "Productivity"
+}
+```
+
+```powershell
+codex plugin add skill-reminder@personal-local --json
+codex plugin list --marketplace personal-local --json
+```
+
+以上命令使用名为 `personal-local` 的市场。安装后新建聊天，到桌面端 **设置 → Hooks** 或 CLI 的 `/hooks` 审阅并信任该插件的 `Stop` Hook，轮末续接随后生效。[Codex Hook 文档](https://learn.chatgpt.com/docs/hooks#review-and-trust-hooks)
+
+Codex 版使用 Node.js 22+。默认开启两项提醒，可将 [config.example.json](config.example.json) 复制为 `~/.codex/skill-reminder.json` 并修改其中的开关。若设置了 `CODEX_HOME`，配置文件放在对应目录。Skill 仍通过下方所述的共享目录发现。
 
 ## 手动安装或链接 Skill
 
