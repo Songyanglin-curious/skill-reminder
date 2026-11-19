@@ -4,10 +4,10 @@
 
 | Skill | 入口 | 设计文档 |
 | --- | --- | --- |
-| `agent-learn` | [SKILL.md](skills/agent-learn/SKILL.md)，用于专题规划、阶段教学、递归补缺、综合与学习资料维护 | [DESIGN.md](skills/agent-learn/DESIGN.md) |
-| `agent-docs` | [SKILL.md](skills/agent-docs/SKILL.md)，用于建立和维护 Docs、调查及更新 Project 当前系统映射 | [DESIGN.md](skills/agent-docs/DESIGN.md) |
+| `agent-learn` | [SKILL.md](skills/agent-learn/SKILL.md)，用于专题规划、阶段教学、递归补缺、综合与学习资料维护 | [设计索引](skills/agent-learn/design/index.md) |
+| `agent-docs` | [SKILL.md](skills/agent-docs/SKILL.md)，用于建立和维护 Docs、调查及更新 Project 当前系统映射 | [设计索引](skills/agent-docs/design/index.md) |
 
-DSH 和 Codex 加载相同的 Skill 目录。每个目录的 `SKILL.md` 使用 YAML frontmatter 声明 `name` 与 `description`，目录名与 `name` 保持一致。执行细节按需从 `references/` 读取。每份 `DESIGN.md` 供维护者查阅设计决策。
+DSH 和 Codex 加载相同的 Skill 目录。每个目录的 `SKILL.md` 使用 YAML frontmatter 声明 `name` 与 `description`，目录名与 `name` 保持一致。执行细节按需从 `references/` 读取。维护者可从上表查阅各 Skill 的设计决策。
 
 ## 工作区配置
 
