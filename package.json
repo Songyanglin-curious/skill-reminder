@@ -8,7 +8,7 @@
     ".": "./src/index.mjs",
     "./package.json": "./package.json"
   },
-  "files": ["src/index.mjs", "src/reminders.mjs", "src/workspace-config.mjs", "prompts", "skills", "cordis.patch.yml", "config.example.json"],
+  "files": ["src/index.mjs", "src/reminders.mjs", "src/workspace-config.mjs", "prompts", "skills/agent-docs", "skills/agent-learn", "cordis.patch.yml", "config.example.json"],
   "dsh": { "bundle": { "patch": "./cordis.patch.yml" } },
   "scripts": {
     "pack": "node scripts/pack.mjs",

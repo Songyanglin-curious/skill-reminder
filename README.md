@@ -54,6 +54,8 @@ dsh --profile web --dump-config | Select-String -Pattern '^\s*- id: skill-remind
 
 打包同时生成 `dist/SHA256SUMS.txt`。安装包内含插件和两个业务 Skill，后者的发现位置按下节配置。卸载使用 `dsh plugin --profile web remove skill-reminder`。
 
+本机若将仓库的 `skills/` 链接到共享目录，请使用上面的 `npm run pack`。脚本会在临时目录放入两个 Skill 的实体文件，供 npm 收录。
+
 ## Codex 安装提醒插件
 
 运行 `npm run pack:codex` 生成 `dist/codex/skill-reminder/`。将该目录完整复制到个人插件源，例如 `~/.codex/plugins/local/skill-reminder/`。在现有 `~/.agents/plugins/marketplace.json` 的 `plugins` 数组追加以下条目。
