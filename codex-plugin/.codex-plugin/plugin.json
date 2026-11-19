@@ -1,6 +1,6 @@
 {
   "name": "skill-reminder",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "在 Codex 回合结束时按需提醒使用 agent-learn 和 agent-docs",
   "author": { "name": "Songyanglin-curious" },
   "hooks": "./hooks/hooks.json",

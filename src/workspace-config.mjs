@@ -14,12 +14,22 @@ function configPath(cwd) {
   }
 }
 
+// 校验工作区的提醒开关和可选提示词路径。
 function validate(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new TypeError('配置必须是 JSON 对象');
   const { enabled = true, skills = {} } = value;
   if (!skills || typeof skills !== 'object' || Array.isArray(skills)) throw new TypeError('skills 必须是 JSON 对象');
   const { 'agent-learn': learn = false, 'agent-docs': docs = false } = skills;
   if ([enabled, learn, docs].some(option => typeof option !== 'boolean')) throw new TypeError('配置开关必须使用布尔值');
+  const { promptFiles = {} } = value;
+  if (!promptFiles || typeof promptFiles !== 'object' || Array.isArray(promptFiles)) {
+    throw new TypeError('promptFiles 必须是 JSON 对象');
+  }
+  for (const name of ['agent-learn', 'agent-docs', 'common']) {
+    if (Object.hasOwn(promptFiles, name) && (typeof promptFiles[name] !== 'string' || !promptFiles[name].trim())) {
+      throw new TypeError(`promptFiles.${name} 必须是非空的文件路径`);
+    }
+  }
 }
 
 function read(path) {

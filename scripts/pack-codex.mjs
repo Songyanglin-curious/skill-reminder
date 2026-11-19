@@ -11,6 +11,9 @@ const files = [
   ['src/reminders.mjs', 'src/reminders.mjs'],
   ['src/workspace-config.mjs', 'src/workspace-config.mjs'],
   ['src/config-cli.mjs', 'src/config-cli.mjs'],
+  ['prompts/agent-learn.md', 'prompts/agent-learn.md'],
+  ['prompts/agent-docs.md', 'prompts/agent-docs.md'],
+  ['prompts/common.md', 'prompts/common.md'],
   ['codex-plugin/skills/skill-reminder-config/SKILL.md', 'skills/skill-reminder-config/SKILL.md'],
   ['config.example.json', 'config.example.json'],
 ];

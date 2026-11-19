@@ -27,13 +27,28 @@ DSH 和 Codex 加载相同的 Skill 目录。每个目录的 `SKILL.md` 使用 Y
 
 也可以直接对 Agent 说「在当前工作区只开启学习提醒」「关闭这个项目的 Docs 提醒」或「查看此工作区的提醒配置」。DSH 使用 `skill_reminder_config` 工具，Codex 使用插件自带的 `skill-reminder-config` Skill。明确要求修改时才创建或更新配置，修改会保留未指定的设置。旧版的宿主级开关和学习工作区标记无需迁移，按需求在各工作区开启提醒。
 
+### 替换 Hook 提示词
+
+Codex 和 DSH 共用随插件分发的 `prompts/agent-learn.md`、`prompts/agent-docs.md` 和 `prompts/common.md`。把要改的文件复制到工作区，再在现有的 `.skill-reminder.json` 中加入 `promptFiles`。例如，只替换学习提醒时，可以这样配置。
+
+```json
+{
+  "skills": { "agent-learn": true },
+  "promptFiles": { "agent-learn": "./.skill-reminder-prompts/agent-learn.md" }
+}
+```
+
+`promptFiles` 可分别设置 `agent-learn`、`agent-docs` 和 `common`。相对路径以 `.skill-reminder.json` 所在目录为准，也可以使用绝对路径。未指定的条目使用包内默认文案，`common` 会附在已启用的 Skill 提醒后面。
+
+将文件保存为 UTF-8。修改后，下一次符合条件的轮末 Hook 会读取新内容，无需重启或重新打包。若本轮需要读取的文件缺失、为空或无法读取，Hook 会记录错误并跳过该次提醒。
+
 ## DSH 安装提醒插件
 
 使用 Node.js 22+，宿主接口已用 DSH `0.2.2-rc.1` 验证。从仓库根目录打包并安装，可将 `web` 替换为目标 Profile。
 
 ```powershell
 npm run pack
-dsh plugin --profile web add (Join-Path $PWD 'dist/skill-reminder-0.2.2.tgz')
+dsh plugin --profile web add (Join-Path $PWD 'dist/skill-reminder-0.2.3.tgz')
 dsh --profile web --dump-config | Select-String -Pattern '^\s*- id: skill-reminder$' -Context 0,4
 ```
 

@@ -1,23 +1,33 @@
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { readWorkspaceConfig } from './workspace-config.mjs';
 
-const reminders = {
-  'agent-learn': '如本轮产生了需要持久化的学习成果，按 agent-learn Skill 检查专题计划、进度和阶段或专题成果是否需要补记。',
-  'agent-docs': '如本轮有值得保存的项目事实、设计决策、长期约定或知识，按 agent-docs Skill 检查相关 Docs 是否需要维护。',
-};
+const reminderSkills = ['agent-learn', 'agent-docs'];
 
-function buildReminder(config = {}) {
-  if (config.enabled === false) return;
-  const enabledReminders = Object.entries(reminders)
-    .filter(([skill]) => config.skills?.[skill] === true)
-    .map(([, reminder]) => reminder);
-  if (enabledReminders.length === 0) return;
-
-  return [
-    ...enabledReminders,
-    '优先复用上下文中已掌握的规则，仅在缺少必要规则且本轮适用时加载。没有实质变化或已经记录时直接结束。',
-  ].join('\n');
+// 读取工作区指定的文案，未指定时读取随插件分发的默认文案。
+function readPrompt(name, configPath, promptFiles) {
+  const override = promptFiles?.[name];
+  const file = override === undefined
+    ? new URL(`../prompts/${name}.md`, import.meta.url)
+    : resolve(dirname(configPath), override);
+  const text = readFileSync(file, 'utf8').trim();
+  if (!text) throw new Error(`提示词文件为空：${file}`);
+  return text;
 }
+
+// 按工作区开关组合 Skill 文案和通用说明。
+function buildReminder(configPath, config = {}) {
+  if (config.enabled === false) return;
+  const enabledSkills = reminderSkills.filter(skill => config.skills?.[skill] === true);
+  if (enabledSkills.length === 0) return;
+
+  return [...enabledSkills, 'common']
+    .map(name => readPrompt(name, configPath, config.promptFiles))
+    .join('\n');
+}
+
+// 定位工作区配置并生成本轮的合并提醒。
 export function reminderForWorkspace(cwd) {
-  const { config } = readWorkspaceConfig(cwd);
-  return buildReminder(config);
+  const { path, config } = readWorkspaceConfig(cwd);
+  return buildReminder(path, config);
 }

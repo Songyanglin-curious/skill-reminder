@@ -17,8 +17,10 @@ function fixture(t) {
   const gitMarker = join(directory, '.git');
   writeFileSync(gitMarker, 'gitdir: worktree');
   const configFile = join(directory, '.skill-reminder.json');
+  const promptFile = join(nested, 'learn.md');
   t.after(() => {
     rmSync(configFile, { force: true });
+    rmSync(promptFile, { force: true });
     rmSync(gitMarker);
     rmdirSync(nested);
     rmdirSync(directory);
@@ -26,6 +28,10 @@ function fixture(t) {
 
   return {
     setConfig: config => writeFileSync(configFile, config),
+    // 在会话子目录中写入测试文案，验证路径以配置目录为准。
+    setPrompt(text) {
+      writeFileSync(promptFile, text);
+    },
     configure(...args) {
       const { status, stdout, stderr } = spawnSync(process.execPath, [cli, ...args], { cwd: nested, encoding: 'utf8' });
       assert.equal(status, 0, stderr);
@@ -91,4 +97,16 @@ test('Codex 将无效输入或配置报告到 stderr 并放行', t => {
   const invalid = run(stop);
   assert.deepEqual(invalid.output, {});
   assert.match(invalid.stderr, /布尔值/);
+});
+
+test('Codex 按配置目录解析替换文案，并在下次停止时读取修改', t => {
+  const workspace = fixture(t);
+  workspace.setConfig(JSON.stringify({
+    skills: { 'agent-learn': true },
+    promptFiles: { 'agent-learn': './nested/learn.md' },
+  }));
+  workspace.setPrompt('自定义学习提醒');
+  assert.match(workspace.run(stop).output.reason, /^自定义学习提醒\n优先复用/);
+  workspace.setPrompt('更新后的学习提醒');
+  assert.match(workspace.run(stop).output.reason, /^更新后的学习提醒\n优先复用/);
 });
